@@ -67,15 +67,20 @@ int8_t sendCommand(const uint8_t *cmd, uint8_t cLen)
 
     // wait ACK
     delay(PN532_ACK_WAIT_TIME);
-    Wire.requestFrom(PN532_I2C_ADDRESS,  1 + 6); // read Status + ACK(6)
+    Wire.requestFrom(PN532_I2C_ADDRESS,  1 + 6, false); // read Status + ACK(6)
     buf[0] = Wire.read();
     if ( (buf[0] & 0x01) != 1 ) {
       // error
       Serial.print("ACK wait timeout");
+      Wire.endTransmission();
       return -1;
     }
 
     // read ACK
+      // こちらを使う?
+      // if (2 <= Wire.available()) { // if two bytes were received
+      // while (Wire.available()) { // slave may send less than requested
+
     for (i = 0; i < 6; i++) {
         buf[i+1] = Wire.read();
     }
@@ -87,13 +92,14 @@ int8_t sendCommand(const uint8_t *cmd, uint8_t cLen)
     delay(1);
     unsigned long start = millis();
     do {
-      Wire.requestFrom(PN532_I2C_ADDRESS,  1); // read Status + ACK(6)
+      Wire.requestFrom(PN532_I2C_ADDRESS,  1, false); // read Status + ACK(6)
       buf[0] = Wire.read();
       if ( (buf[0] & 0x01) == 1 ) {
         break;
       }
       if ( (millis() - start) > TIMEOUT ) {
         Serial.print("response wait timeout");
+        Wire.endTransmission();
         return -2;
       }
     } while(1);
@@ -107,7 +113,7 @@ int8_t sendCommand(const uint8_t *cmd, uint8_t cLen)
         buf[i] = Wire.read();
     }
 
-    Serial.print("Sesponse: ");
+    Serial.print("Response: ");
     printHex(buf, rLen + 8);
     Serial.print("\n");
     return 0;
@@ -128,10 +134,10 @@ void setup(void)
 
   uint8_t cmd[] = {0x02};
   sendCommand(cmd, 1);
-
 }
 
 void loop(void)
 {
-
+  uint8_t cmd[] = {0x02};
+  sendCommand(cmd, 1);
 }
