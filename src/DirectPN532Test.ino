@@ -17,7 +17,7 @@
 
 const uint8_t PN532_PRE_START[] = {0, 0, 0xFF};
 const uint8_t PN532_ACK[] = {0, 0xFF, 0};
-uint8_t buf[256];
+uint8_t buf[35];
 
 void printHex(uint8_t d);
 void printHex(uint8_t d[], uint8_t len);
@@ -34,29 +34,30 @@ void printHex(uint8_t d[], uint8_t len) {
     printHex(d[i]);
   }
 }
-uint8_t parse (const uint8_t *cmd, uint8_t *index, uint8_t *type, uint8_t *nextLen, uint8_t *dataLen) {
+
+uint8_t parse (const uint8_t *cmd, const uint8_t len, uint8_t *type, uint8_t *dataLen, uint8_t *data) {
   if ( (buf[0] & 0x01) != 1 ) {
     Serial.println("Error response");
     return -1;
   }
-  if ( *index < 7 ) {
+
+  if ( len < 7 ) {
     *type = T_UNKNOWN;
-    *nextLen = 7 - *index;
     return 1;
   }
 
   // check response frame
-  if ( memcmp(buf + 1, PN532_PRE_START, 3) != 0 ) {
+  if ( memcmp( &buf[1], PN532_PRE_START, 3) != 0 ) {
     Serial.println("Wrong frame");
     return -2;
   }
-  if ( memcmp(buf + 4, PN532_ACK, 3) == 0 ) {
+
+  if ( memcmp( &buf[4], PN532_ACK, 3) == 0 ) {
     Serial.println("ACK received");
     *type = T_ACK;
-    *nextLen = 7;
-    *index = 0;
     return 1;
   }
+
   if ( (buf[4] + buf[5]) & 0xFF != 0 ) {
     Serial.println(buf[4] + buf[5]);
     Serial.println( (buf[4] + buf[5]) & 0xFF);
@@ -67,13 +68,13 @@ uint8_t parse (const uint8_t *cmd, uint8_t *index, uint8_t *type, uint8_t *nextL
   Serial.print("LEN="); Serial.println(buf[4]);
   *type = T_DATA;
   *dataLen = buf[4];
-  *nextLen = buf[4] + 1; // len - 1(TFI) + 2(checksum+post)
+  memcpy(data, &buf[7], *dataLen);
   return 1;
 }
 
 int8_t sendData(const uint8_t *cmd, uint8_t cLen)
 {
-  uint8_t i, k = 0, bufIndex;
+  uint8_t i, k = 0;
 
   buf[k++] = PN532_PREAMBLE;
   buf[k++] = PN532_STARTCODE1;
@@ -95,10 +96,7 @@ int8_t sendData(const uint8_t *cmd, uint8_t cLen)
   buf[k++] = checksum;
   buf[k++] = PN532_POSTAMBLE;
 
-  Serial.print("Send: ");
-  printHex(buf, k);
-  Serial.print("\n");
-
+  Serial.print("Send: ");  printHex(buf, k); Serial.print("\n");
   Wire.beginTransmission(PN532_I2C_ADDRESS);
   for (i = 0; i < k; i++) {
     Wire.write(buf[i]);
@@ -109,74 +107,55 @@ int8_t sendData(const uint8_t *cmd, uint8_t cLen)
   delay(10);
 
   // read ACK
-  bufIndex = 0;
-  for(int n=0; n<7; n++ ) {
-    Wire.requestFrom(PN532_I2C_ADDRESS,  2, false); // read Status + ACK(6)
-    Serial.print("Wire.available()="); Serial.println(Wire.available());
-    while (Wire.available()) {
-      buf[bufIndex++] = Wire.read();
-    }   
-  }
-
-  /*
-  Wire.requestFrom(PN532_I2C_ADDRESS,  1 + 6); // read Status + ACK(6)
+  Wire.requestFrom(PN532_I2C_ADDRESS,  sizeof(buf)); // read Status + ACK(6)
   Serial.print("Wire.available()="); Serial.println(Wire.available());
-  bufIndex = 0;
+  uint8_t bufIndex = 0;
   while (Wire.available()) {
     buf[bufIndex++] = Wire.read();
-    if (bufIndex > 200) {
-      Serial.println("Wrong read length");
-      return -1;
-    }
   }
-  */
 
-  Serial.print("Received data: ");
-  printHex(buf, 7);
-  Serial.print("\n");
+  Serial.print("Received data: "); printHex(buf, bufIndex); Serial.print("\n");
 
   uint8_t type = T_UNKNOWN;
-  uint8_t nextFrameSize = 0;
   uint8_t dataLen = 0;
-  if ( parse (buf, &bufIndex, &type, &nextFrameSize, &dataLen) != 1 ) {
+  uint8_t dataBuf[32];
+  if ( parse (buf, bufIndex, &type, &dataLen, dataBuf) != 1 ) {
     return -1;
   }
   Serial.print("type="); Serial.println(type);
+  Serial.print("len="); Serial.println(bufIndex);
   Serial.print("dataLen="); Serial.println(dataLen);
-  Serial.print("nextFrameSize="); Serial.println(nextFrameSize);
-  Serial.print("bufIndex="); Serial.println(bufIndex);
 
   // wait response
   unsigned long start = millis();
   unsigned long el = (millis() - start);
-  Serial.print(" @P2 ");
-  while ( nextFrameSize > 0 ) {
-    Wire.requestFrom(PN532_I2C_ADDRESS, nextFrameSize);
+  while ( 1 ) {
+    Wire.requestFrom(PN532_I2C_ADDRESS, sizeof(buf));
     Serial.print("Wire.available()="); Serial.println(Wire.available());
+    bufIndex = 0;
     while (Wire.available()) {
       buf[bufIndex++] = Wire.read();
-      nextFrameSize--;
     }
 
+    Serial.print("Response: "); printHex(buf, bufIndex);  Serial.print("\n");
+
     printHex(buf, bufIndex); Serial.print("\n");
-    if ( parse (buf, &bufIndex, &type, &nextFrameSize, &dataLen) != 1 ) {
+    if ( parse (buf, bufIndex, &type, &dataLen, dataBuf) != 1 ) {
       return -1;
     }
+    Serial.print("data: "); printHex(dataBuf, dataLen);  Serial.print("\n");
     Serial.print("type="); Serial.println(type);
+    Serial.print("len="); Serial.println(bufIndex);
     Serial.print("dataLen="); Serial.println(dataLen);
-    Serial.print("nextFrameSize="); Serial.println(nextFrameSize);
-    Serial.print("bufIndex="); Serial.println(bufIndex);
     delay(10);
     Serial.print("elapsed: "); Serial.println(el);
     if ( el > TIMEOUT ) {
       Serial.print("response wait timeout");
       return -2;
     }
+    break;
   }
 
-  Serial.print("Response: ");
-  printHex(buf, bufIndex);
-  Serial.print("\n");
   return 0;
 }
 
@@ -207,4 +186,5 @@ void loop(void)
   delay(1000);
   Serial.println("D3");
   */
+  delay(1000);
 }
