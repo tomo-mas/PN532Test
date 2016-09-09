@@ -910,30 +910,30 @@ int8_t PN532::felica_Polling(uint16_t systemCode, uint8_t requestCode, uint8_t *
 
   int16_t status = HAL(readResponse)(pn532_packetbuffer, 22, timeout);
   if (status < 0) {
-    DMSG2("Could not receive response\n");
+    DMSG("Could not receive response\n");
     return -2;
   }
 
   // Check NbTg (pn532_packetbuffer[7])
   if (pn532_packetbuffer[0] == 0) {
-    DMSG2("No card had detected\n");
+    DMSG("No card had detected\n");
     return 0;
   } else if (pn532_packetbuffer[0] != 1) {
-    DMSG2("Unhandled number of targets inlisted. NbTg: ");
+    DMSG("Unhandled number of targets inlisted. NbTg: ");
     DMSG_HEX(pn532_packetbuffer[7]);
-    DMSG2("\n");
+    DMSG("\n");
     return -3;
   }
 
   inListedTag = pn532_packetbuffer[1];
-  DMSG2("Tag number: ");
+  DMSG("Tag number: ");
   DMSG_HEX(pn532_packetbuffer[1]);
-  DMSG2("\n");
+  DMSG("\n");
 
   // length check
   uint8_t responseLength = pn532_packetbuffer[2];
   if (responseLength != 18 && responseLength != 20) {
-    DMSG2("Wrong response length\n");
+    DMSG("Wrong response length\n");
     return -4;
   }
 
@@ -967,7 +967,7 @@ int8_t PN532::felica_Polling(uint16_t systemCode, uint8_t requestCode, uint8_t *
 int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8_t *response, uint8_t *responseLength)
 {
   if (commandlength > 0xFE) {
-    DMSG2("Command length too long\n");
+    DMSG("Command length too long\n");
     return -1;
   }
 
@@ -976,29 +976,29 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
   pn532_packetbuffer[2] = commandlength + 1;
 
   if (HAL(writeCommand)(pn532_packetbuffer, 3, command, commandlength)) {
-    DMSG2("Could not send FeliCa command\n");
+    DMSG("Could not send FeliCa command\n");
     return -2;
   }
 
-  // Wait card response ( longer than 102.4ms )
+  // Wait card response
   int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 200);
   if (status < 0) {
-    DMSG2("Could not receive response\n");
+    DMSG("Could not receive response\n");
     return -3;
   }
 
   // Check status (pn532_packetbuffer[0])
   if ((pn532_packetbuffer[0] & 0x3F)!=0) {
-    DMSG2("Status code indicates an error: ");
+    DMSG("Status code indicates an error: ");
     DMSG_HEX(pn532_packetbuffer[0]);
-    DMSG2("\n");
+    DMSG("\n");
     return -4;
   }
 
   // length check
   *responseLength = pn532_packetbuffer[1] - 1;
   if ( (status - 2) != *responseLength) {
-    DMSG2("Wrong response length\n");
+    DMSG("Wrong response length\n");
     return -5;
   }
 
@@ -1022,7 +1022,7 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
 int8_t PN532::felica_RequestService(uint8_t numNode, uint16_t *nodeCodeList, uint16_t *keyVersions)
 {
   if (numNode > FELICA_REQ_SERVICE_MAX_NODE_NUM) {
-    DMSG2("numNode is too large\n");
+    DMSG("numNode is too large\n");
     return -1;
   }
 
@@ -1043,13 +1043,13 @@ int8_t PN532::felica_RequestService(uint8_t numNode, uint16_t *nodeCodeList, uin
   uint8_t responseLength;
 
   if (felica_SendCommand(cmd, cmdLen, response, &responseLength) != 1) {
-    DMSG2("Request Service command failed\n");
+    DMSG("Request Service command failed\n");
     return -2;
   }
 
   // length check
   if ( responseLength != 10+2*numNode ) {
-    DMSG2("Request Service command failed (wrong response length)\n");
+    DMSG("Request Service command failed (wrong response length)\n");
     return -3;
   }
 
@@ -1078,13 +1078,13 @@ int8_t PN532::felica_RequestResponse(uint8_t * mode)
   uint8_t response[10];
   uint8_t responseLength;
   if (felica_SendCommand(cmd, 9, response, &responseLength) != 1) {
-    DMSG2("Request Response command failed\n");
+    DMSG("Request Response command failed\n");
     return -1;
   }
 
   // length check
   if ( responseLength != 10) {
-    DMSG2("Request Response command failed (wrong response length)\n");
+    DMSG("Request Response command failed (wrong response length)\n");
     return -2;
   }
 
@@ -1183,11 +1183,11 @@ int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, uint16_t *servic
 int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16])
 {
   if (numService > FELICA_WRITE_MAX_SERVICE_NUM) {
-    DMSG2("numService is too large\n");
+    DMSG("numService is too large\n");
     return -1;
   }
   if (numBlock > FELICA_WRITE_MAX_BLOCK_NUM) {
-    DMSG2("numBlock is too large\n");
+    DMSG("numBlock is too large\n");
     return -2;
   }
 
@@ -1217,22 +1217,22 @@ int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, uint16_t *servi
   uint8_t response[11];
   uint8_t responseLength;
   if (felica_SendCommand(cmd, cmdLen, response, &responseLength) != 1) {
-    DMSG2("Write Without Encryption command failed\n");
+    DMSG("Write Without Encryption command failed\n");
     return -3;
   }
 
   // length check
   if ( responseLength != 11 ) {
-    DMSG2("Write Without Encryption command failed (wrong response length)\n");
+    DMSG("Write Without Encryption command failed (wrong response length)\n");
     return -4;
   }
 
   // status flag check
   if ( response[9] != 0 || response[10] != 0 ) {
-    DMSG2("Write Without Encryption command failed (Status Flag: ");
+    DMSG("Write Without Encryption command failed (Status Flag: ");
     DMSG_HEX(pn532_packetbuffer[9]);
     DMSG_HEX(pn532_packetbuffer[10]);
-    DMSG2(")\n");
+    DMSG(")\n");
     return -5;
   }
 
@@ -1258,14 +1258,14 @@ int8_t PN532::felica_RequestSystemCode(uint8_t * numSystemCode, uint16_t *system
   uint8_t response[10 + 2 * 16];
   uint8_t responseLength;
   if (felica_SendCommand(cmd, 9, response, &responseLength) != 1) {
-    DMSG2("Request System Code command failed\n");
+    DMSG("Request System Code command failed\n");
     return -1;
   }
   *numSystemCode = response[9];
 
   // length check
   if ( responseLength < 10 + 2 * *numSystemCode ) {
-    DMSG2("Request System Code command failed (wrong response length)\n");
+    DMSG("Request System Code command failed (wrong response length)\n");
     return -2;
   }
 
@@ -1290,25 +1290,25 @@ int8_t PN532::felica_Release()
   // InRelease
   pn532_packetbuffer[0] = PN532_COMMAND_INRELEASE;
   pn532_packetbuffer[1] = 0x00;   // All target
-  DMSG2("Release all FeliCa target\n");
+  DMSG("Release all FeliCa target\n");
 
   if (HAL(writeCommand)(pn532_packetbuffer, 2)) {
-    DMSG2("No ACK\n");
+    DMSG("No ACK\n");
     return -1;  // no ACK
   }
 
   // Wait card response
   int16_t frameLength = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 1000);
   if (frameLength < 0) {
-    DMSG2("Could not receive response\n");
+    DMSG("Could not receive response\n");
     return -2;
   }
 
   // Check status (pn532_packetbuffer[0])
   if ((pn532_packetbuffer[0] & 0x3F)!=0) {
-    DMSG2("Status code indicates an error: ");
+    DMSG("Status code indicates an error: ");
     DMSG_HEX(pn532_packetbuffer[7]);
-    DMSG2("\n");
+    DMSG("\n");
     return -3;
   }
 
@@ -1316,7 +1316,7 @@ int8_t PN532::felica_Release()
   // pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
   // pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
   // pn532_packetbuffer[2] = 0x00; // AutoRFCA is off, RF is off
-  // DMSG2("Turning RF off");
+  // DMSG("Turning RF off");
   //
   // if (! sendCommandCheckAck(pn532_packetbuffer, 3))
   //   return false;  // no ACK
@@ -1328,7 +1328,7 @@ int8_t PN532::felica_Release()
   // pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
   // pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
   // pn532_packetbuffer[2] = 0x01; // AutoRFCA is off, RF is off
-  // DMSG2("Turning RF on");
+  // DMSG("Turning RF on");
   //
   // if (! sendCommandCheckAck(pn532_packetbuffer, 3))
   //   return false;  // no ACK
