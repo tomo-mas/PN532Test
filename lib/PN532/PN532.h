@@ -173,11 +173,11 @@ public:
 
     // FeliCa Functions
     int8_t felica_Polling(uint16_t systemCode, uint8_t requestCode, uint8_t *idm, uint8_t *pmm, uint16_t *systemCodeResponse, uint16_t timeout=1000);
-    int8_t felica_SendCommand (uint8_t * command, uint8_t commandlength, uint8_t * response, uint8_t * responseLength);
+    int8_t felica_SendCommand (const uint8_t * command, uint8_t commandlength, uint8_t * response, uint8_t * responseLength);
     int8_t felica_RequestService(uint8_t numNode, uint16_t *nodeCodeList, uint16_t *keyVersions) ;
     int8_t felica_RequestResponse(uint8_t *mode);
-    int8_t felica_ReadWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16]);
-    int8_t felica_WriteWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16]);
+    int8_t felica_ReadWithoutEncryption (uint8_t numService, const uint16_t *serviceCodeList, uint8_t numBlock, const uint16_t *blockList, uint8_t blockData[][16]);
+    int8_t felica_WriteWithoutEncryption (uint8_t numService, const uint16_t *serviceCodeList, uint8_t numBlock, const uint16_t *blockList, uint8_t blockData[][16]);
     int8_t felica_RequestSystemCode(uint8_t *numSystemCode, uint16_t *systemCodeList);
     int8_t felica_Release();
 

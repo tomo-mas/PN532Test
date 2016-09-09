@@ -964,7 +964,7 @@ int8_t PN532::felica_Polling(uint16_t systemCode, uint8_t requestCode, uint8_t *
                                      < 0: error
 */
 /**************************************************************************/
-int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8_t *response, uint8_t *responseLength)
+int8_t PN532::felica_SendCommand (const uint8_t *command, uint8_t commandlength, uint8_t *response, uint8_t *responseLength)
 {
   if (commandlength > 0xFE) {
     DMSG("Command length too long\n");
@@ -1105,7 +1105,7 @@ int8_t PN532::felica_RequestResponse(uint8_t * mode)
                                      < 0: error
 */
 /**************************************************************************/
-int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16])
+int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, const uint16_t *serviceCodeList, uint8_t numBlock, const uint16_t *blockList, uint8_t blockData[][16])
 {
   if (numService > FELICA_READ_MAX_SERVICE_NUM) {
     DMSG("numService is too large\n");
@@ -1180,7 +1180,7 @@ int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, uint16_t *servic
                                      < 0: error
 */
 /**************************************************************************/
-int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16])
+int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, const uint16_t *serviceCodeList, uint8_t numBlock, const uint16_t *blockList, uint8_t blockData[][16])
 {
   if (numService > FELICA_WRITE_MAX_SERVICE_NUM) {
     DMSG("numService is too large\n");
