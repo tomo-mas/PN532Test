@@ -85,12 +85,12 @@ void loop(void)
   if (ret != 1)
   {
     Serial.println("Could not find a card");
-    delay(10);
+    delay(500);
     return;
   }
 
   if ( memcmp(idm, _prevIDm, 8) == 0 ) {
-    if ( (_prevTime - millis()) < 2000 ) {
+    if ( (millis() - _prevTime) < 3000 ) {
       Serial.println("Same card");
       delay(500);
       return;
