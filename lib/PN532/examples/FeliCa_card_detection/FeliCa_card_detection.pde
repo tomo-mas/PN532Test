@@ -11,11 +11,12 @@
 
  */
 /**************************************************************************/
+#include <Arduino.h>
 
-#if 0
+#if 1
   #include <SPI.h>
   #include <PN532_SPI.h>
-  #include "PN532.h"
+  #include <PN532.h>
 
 PN532_SPI pn532spi(SPI, 10);
 PN532 nfc(pn532spi);
@@ -34,13 +35,10 @@ PN532_I2C pn532i2c(Wire);
 PN532 nfc(pn532i2c);
 #endif
 
+#include <PN532_debug.h>
+
 uint8_t        _prevIDm[8];
 unsigned long  _prevTime;
-
-void printHex(uint8_t a) {
-    printf("%x", (a >> 4)&0x0F);
-    printf("%x\n", (a)&0x0F);
-}
 
 void setup(void)
 {
@@ -65,6 +63,7 @@ void setup(void)
   // This prevents us from waiting forever for a card, which is
   // the default behaviour of the PN532.
   nfc.setPassiveActivationRetries(0xFF);
+  nfc.SAMConfig();
 
   memset(_prevIDm, 0, 8);
 }
@@ -81,17 +80,17 @@ void loop(void)
   // Wait for an FeliCa type cards.
   // When one is found, some basic information such as IDm, PMm, and System Code are retrieved.
   Serial.print("Waiting for an FeliCa card...  ");
-  ret = nfc.felica_Polling(systemCode, requestCode, idm, pmm, &systemCodeResponse, 1000);
+  ret = nfc.felica_Polling(systemCode, requestCode, idm, pmm, &systemCodeResponse, 5000);
 
   if (ret != 1)
   {
     Serial.println("Could not find a card");
-    delay(10);
+    delay(500);
     return;
   }
 
   if ( memcmp(idm, _prevIDm, 8) == 0 ) {
-    if ( (_prevTime - millis()) < 2000 ) {
+    if ( (millis() - _prevTime) < 3000 ) {
       Serial.println("Same card");
       delay(500);
       return;
@@ -99,36 +98,18 @@ void loop(void)
   }
 
   Serial.println("Found a card!");
-  Serial.print("IDm: ");
+  Serial.print("  IDm: ");
   nfc.PrintHex(idm, 8);
-  Serial.println("");
-  Serial.print("PMm: ");
+  Serial.print("  PMm: ");
   nfc.PrintHex(pmm, 8);
-  Serial.println("");
+  Serial.print("  System Code: ");
+  Serial.print(systemCodeResponse, HEX);
+  Serial.print("\n");
 
   memcpy(_prevIDm, idm, 8);
   _prevTime = millis();
 
-
-  Serial.print("Reading card data...  ");
-  uint8_t blockData[3][16];
-  uint16_t serviceCodeList[1] = {0x090F};
-  uint16_t blockList[3] = {0x8000, 0x8001, 0x8002};
-  ret = nfc.felica_ReadWithoutEncryption(1, serviceCodeList, 3, blockList, blockData);
-
-  if (ret != 1)
-  {
-    Serial.println("Could not read the card");
-    delay(10);
-    return;
-  }
-
-  for(int i=0; i<3; i++ ) {
-    Serial.print("data"); Serial.print(i, DEC);
-    nfc.PrintHex(blockData[i], 16);
-    Serial.println("");
-  }
-
   // Wait 1 second before continuing
+  Serial.println("Card access completed!\n");
   delay(1000);
 }
