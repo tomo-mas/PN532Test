@@ -110,5 +110,6 @@ void loop(void)
   _prevTime = millis();
 
   // Wait 1 second before continuing
+  Serial.println("Card access completed!\n");
   delay(1000);
 }
