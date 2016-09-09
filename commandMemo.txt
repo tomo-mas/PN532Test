@@ -1,0 +1,18 @@
+getFirmwareVersion
+00 00 FF 02 FE D4 02 2A 00
+
+setPassiveActivationRetries
+00 00 FF 06 FA D4 32 05 FF 01 FF F6 00
+
+SAMConfig
+00 00 FF 05 FB D4 14 01 14 01 02 00
+
+Polling
+00 00 FF 09 F7 D4 4A 01 01 00 FF FF 01 00 E1 00
+-> 00 00 ff 18 e8 d5 4b 01 01 14 01 01 2e 30 d2 00 50 7e b4 00 f1 00 00 00 01 43 00 88 b4 a5 00
+
+
+
+ReqServ
+00 00 FF 18 E8 D4 40 01 15 02 01 2E 30 D2 00 50 7E B4 05 00 00 00 10 01 10 13 17 FF FF D3 00
+-> 00 00 ff 00 ff 00 00 00 ff 03 fd d5 41 01 e9 00

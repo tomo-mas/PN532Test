@@ -237,7 +237,7 @@ bool PN532::SAMConfig(void)
     pn532_packetbuffer[2] = 0x14; // timeout 50ms * 20 = 1 second
     pn532_packetbuffer[3] = 0x01; // use IRQ pin!
 
-    DMSG2("SAMConfig\n");
+    DMSG("SAMConfig\n");
 
     if (HAL(writeCommand)(pn532_packetbuffer, 4))
         return false;
@@ -982,9 +982,6 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
 
   // Wait card response ( longer than 102.4ms )
   int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 200);
-  DMSG2("STATUS: ");
-  Serial.print(status, HEX);
-
   if (status < 0) {
     DMSG2("Could not receive response\n");
     return -3;
@@ -1003,11 +1000,6 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
   if ( (status - 2) != *responseLength) {
     DMSG2("Wrong response length\n");
     return -5;
-  }
-
-  if (*responseLength > sizeof(response)) {
-    DMSG2("Insufficient buffer\n");
-    return -6;
   }
 
   memcpy(response, &pn532_packetbuffer[2], *responseLength);
@@ -1044,7 +1036,7 @@ int8_t PN532::felica_RequestService(uint8_t numNode, uint16_t *nodeCodeList, uin
   cmd[j++] = numNode;
   for (i=0; i<numNode; ++i) {
     cmd[j++] = nodeCodeList[i] & 0xFF;
-    cmd[j++] = nodeCodeList[i] >> 8 & 0xff;
+    cmd[j++] = (nodeCodeList[i] >> 8) & 0xff;
   }
 
   uint8_t response[10+2*numNode];
@@ -1116,11 +1108,11 @@ int8_t PN532::felica_RequestResponse(uint8_t * mode)
 int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, uint16_t *serviceCodeList, uint8_t numBlock, uint16_t *blockList, uint8_t blockData[][16])
 {
   if (numService > FELICA_READ_MAX_SERVICE_NUM) {
-    DMSG2("numService is too large\n");
+    DMSG("numService is too large\n");
     return -1;
   }
   if (numBlock > FELICA_READ_MAX_BLOCK_NUM) {
-    DMSG2("numBlock is too large\n");
+    DMSG("numBlock is too large\n");
     return -2;
   }
 
@@ -1134,33 +1126,33 @@ int8_t PN532::felica_ReadWithoutEncryption (uint8_t numService, uint16_t *servic
   cmd[j++] = numService;
   for (i=0; i<numService; ++i) {
     cmd[j++] = serviceCodeList[i] & 0xFF;
-    cmd[j++] = serviceCodeList[i] >> 8 & 0xff;
+    cmd[j++] = (serviceCodeList[i] >> 8) & 0xff;
   }
   cmd[j++] = numBlock;
   for (i=0; i<numBlock; ++i) {
-    cmd[j++] = blockList[i] & 0xFF;
-    cmd[j++] = blockList[i] >> 8 & 0xff;
+    cmd[j++] = (blockList[i] >> 8) & 0xFF;
+    cmd[j++] = blockList[i] & 0xff;
   }
 
   uint8_t response[12+16*numBlock];
   uint8_t responseLength;
   if (felica_SendCommand(cmd, cmdLen, response, &responseLength) != 1) {
-    DMSG2("Read Without Encryption command failed\n");
+    DMSG("Read Without Encryption command failed\n");
     return -3;
   }
 
   // length check
   if ( responseLength != 12+16*numBlock ) {
-    DMSG2("Read Without Encryption command failed (wrong response length)\n");
+    DMSG("Read Without Encryption command failed (wrong response length)\n");
     return -4;
   }
 
   // status flag check
   if ( response[9] != 0 || response[10] != 0 ) {
-    DMSG2("Read Without Encryption command failed (Status Flag: ");
+    DMSG("Read Without Encryption command failed (Status Flag: ");
     DMSG_HEX(pn532_packetbuffer[9]);
     DMSG_HEX(pn532_packetbuffer[10]);
-    DMSG2(")\n");
+    DMSG(")\n");
     return -5;
   }
 
@@ -1209,12 +1201,12 @@ int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, uint16_t *servi
   cmd[j++] = numService;
   for (i=0; i<numService; ++i) {
     cmd[j++] = serviceCodeList[i] & 0xFF;
-    cmd[j++] = serviceCodeList[i] >> 8 & 0xff;
+    cmd[j++] = (serviceCodeList[i] >> 8) & 0xff;
   }
   cmd[j++] = numBlock;
   for (i=0; i<numBlock; ++i) {
-    cmd[j++] = blockList[i] & 0xFF;
-    cmd[j++] = blockList[i] >> 8 & 0xff;
+    cmd[j++] = (blockList[i] >> 8) & 0xFF;
+    cmd[j++] = blockList[i] & 0xff;
   }
   for (i=0; i<numBlock; ++i) {
     for(k=0; k<16; k++) {
@@ -1252,12 +1244,12 @@ int8_t PN532::felica_WriteWithoutEncryption (uint8_t numService, uint16_t *servi
     @brief  Sends FeliCa Request System Code command
 
     @param[out] numSystemCode
-    @param[out] systemCodeList
+    @param[out] systemCodeList ( Array length should longer than 16 )
     @return                          = 1: Success
                                      < 0: error
 */
 /**************************************************************************/
-int8_t PN532::felica_RequestSystemCode(uint8_t * numSystemCode, uint16_t systemCodeList[])
+int8_t PN532::felica_RequestSystemCode(uint8_t * numSystemCode, uint16_t *systemCodeList)
 {
   uint8_t cmd[9];
   cmd[0] = FELICA_CMD_REQUEST_SYSTEM_CODE;

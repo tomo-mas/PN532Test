@@ -198,7 +198,7 @@ private:
     uint8_t _felicaIDm[8]; // FeliCa IDm (NFCID2)
     uint8_t _felicaPMm[8]; // FeliCa PMm (PAD)
 
-    uint8_t pn532_packetbuffer[262];
+    uint8_t pn532_packetbuffer[255];
 
     PN532Interface *_interface;
 };
