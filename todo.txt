@@ -1,0 +1,4 @@
+●debug.hの以下のマクロが、Platformioで正しく動作しない。
+#define DMSG(args...)         Serial.print(args)
+ → FeliCa関係だけDMSG2を新設して利用。リリース時にDMSG2をDMSGに書き換える
+ 
