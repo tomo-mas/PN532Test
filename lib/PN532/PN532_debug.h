@@ -5,10 +5,13 @@
 
 #include "Arduino.h"
 
+//void DMSG(const char c[]);
+//void DMSG(const char c);
+
 #ifdef DEBUG
 //#define DMSG(args...)         Serial.print(args)
-#define DMSG(args...)   
-#define DMSG2(args)        Serial.print(args)
+#define DMSG(args...)
+#define DMSG2(args)           Serial.print(args)
 #define DMSG_STR(str)         Serial.println(str)
 #define DMSG_HEX(num)         Serial.print(' '); Serial.print((num>>4)&0x0F, HEX); Serial.print(num&0x0F, HEX)
 #define DMSG_INT(num)         Serial.print(' '); Serial.print(num)

@@ -49,12 +49,12 @@ int8_t PN532_SPI::writeCommand(const uint8_t *header, uint8_t hlen, const uint8_
         delay(1);
         timeout--;
         if (0 == timeout) {
-            DMSG("Time out when waiting for ACK\n");
+            //DMSG2("Time out when waiting for ACK\n");
             return -2;
         }
     }
     if (readAckFrame()) {
-        DMSG2("Invalid ACK\n");
+        //DMSG2("Invalid ACK\n");
         return PN532_INVALID_ACK;
     }
     return 0;
@@ -107,7 +107,7 @@ int16_t PN532_SPI::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
             for (uint8_t i = 0; i < length; i++) {
                 DMSG_HEX(read());                 // dump message
             }
-            DMSG("\nNot enough space\n");
+            DMSG2("\nNot enough space\n");
             read();
             read();
             result = PN532_NO_SPACE;  // not enough space
@@ -125,7 +125,7 @@ int16_t PN532_SPI::readResponse(uint8_t buf[], uint8_t len, uint16_t timeout)
 
         uint8_t checksum = read();
         if (0 != (uint8_t)(sum + checksum)) {
-            DMSG("checksum is not ok\n");
+            DMSG2("checksum is not ok\n");
             result = PN532_INVALID_FRAME;
             break;
         }
@@ -159,11 +159,19 @@ void PN532_SPI::writeFrame(const uint8_t *header, uint8_t hlen, const uint8_t *b
     write(PN532_STARTCODE1);
     write(PN532_STARTCODE2);
 
+    DMSG_HEX(DATA_WRITE);
+    DMSG_HEX(PN532_PREAMBLE);
+    DMSG_HEX(PN532_STARTCODE1);
+    DMSG_HEX(PN532_STARTCODE2);
+
     uint8_t length = hlen + blen + 1;   // length of data field: TFI + DATA
     write(length);
     write(~length + 1);         // checksum of length
+    DMSG_HEX(length);
+    DMSG_HEX(~length + 1);         // checksum of length
 
     write(PN532_HOSTTOPN532);
+    DMSG_HEX(PN532_HOSTTOPN532);         // checksum of length
     uint8_t sum = PN532_HOSTTOPN532;    // sum of TFI + DATA
 
     DMSG2("write: ");
@@ -184,6 +192,8 @@ void PN532_SPI::writeFrame(const uint8_t *header, uint8_t hlen, const uint8_t *b
     uint8_t checksum = ~sum + 1;        // checksum of TFI + DATA
     write(checksum);
     write(PN532_POSTAMBLE);
+    DMSG_HEX(checksum);
+    DMSG_HEX(PN532_POSTAMBLE);
 
     digitalWrite(_ss, HIGH);
 

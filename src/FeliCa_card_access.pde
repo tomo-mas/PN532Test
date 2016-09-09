@@ -48,12 +48,8 @@ void setup(void)
 {
   Serial.begin(115200);
   Serial.println("Hello!");
-  DMSG (" @Hello1!@ ");
 
   nfc.begin();
-
-  DMSG (" @Hello2!@ ");
-
 
   uint32_t versiondata = nfc.getFirmwareVersion();
   if (!versiondata)
@@ -61,7 +57,6 @@ void setup(void)
     Serial.print("Didn't find PN53x board");
     while (1) {delay(10);};      // halt
   }
-  DMSG (" @Hello3!@ ");
 
   // Got ok data, print it out!
   Serial.print("Found chip PN5"); Serial.println((versiondata >> 24) & 0xFF, HEX);
@@ -119,10 +114,10 @@ void loop(void)
   _prevTime = millis();
 
 
-  Serial.print("Request Service Command");
-  uint16_t nodeCodeList[5] = {0x0000, 0x1000, 0x1001, 0x1713, 0xFFFF};
-  uint16_t keyVersions[5];
-  ret = nfc.felica_RequestService(5, nodeCodeList, keyVersions);
+  Serial.print("Request Service Command\n");
+  uint16_t nodeCodeList[1] = {0x0000};
+  uint16_t keyVersions[1];
+  ret = nfc.felica_RequestService(1, nodeCodeList, keyVersions);
 
   if (ret != 1)
   {

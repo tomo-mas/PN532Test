@@ -237,7 +237,7 @@ bool PN532::SAMConfig(void)
     pn532_packetbuffer[2] = 0x14; // timeout 50ms * 20 = 1 second
     pn532_packetbuffer[3] = 0x01; // use IRQ pin!
 
-    DMSG("SAMConfig\n");
+    DMSG2("SAMConfig\n");
 
     if (HAL(writeCommand)(pn532_packetbuffer, 4))
         return false;
@@ -904,7 +904,7 @@ int8_t PN532::felica_Polling(uint16_t systemCode, uint8_t requestCode, uint8_t *
   pn532_packetbuffer[7] = 0;
 
   if (HAL(writeCommand)(pn532_packetbuffer, 8)) {
-    DMSG2("Could not send Polling command\n");
+    DMSG("Could not send Polling command\n");
     return -1;
   }
 
@@ -981,15 +981,14 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
   }
 
   // Wait card response ( longer than 102.4ms )
-  int16_t frameLength = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 110);
-  if (frameLength < 0) {
+  int16_t status = HAL(readResponse)(pn532_packetbuffer, sizeof(pn532_packetbuffer), 200);
+  DMSG2("STATUS: ");
+  Serial.print(status, HEX);
+
+  if (status < 0) {
     DMSG2("Could not receive response\n");
     return -3;
   }
-
-  DMSG2("RES1: ");
-  PrintHex(pn532_packetbuffer, frameLength);
-
 
   // Check status (pn532_packetbuffer[0])
   if ((pn532_packetbuffer[0] & 0x3F)!=0) {
@@ -1001,7 +1000,7 @@ int8_t PN532::felica_SendCommand (uint8_t *command, uint8_t commandlength, uint8
 
   // length check
   *responseLength = pn532_packetbuffer[1] - 1;
-  if ( (frameLength - 2) != *responseLength) {
+  if ( (status - 2) != *responseLength) {
     DMSG2("Wrong response length\n");
     return -5;
   }
@@ -1321,29 +1320,27 @@ int8_t PN532::felica_Release()
     return -3;
   }
 
-  /*
   // Power off RF
-  pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
-  pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
-  pn532_packetbuffer[2] = 0x00; // AutoRFCA is off, RF is off
-  DMSG2("Turning RF off"));
+  // pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
+  // pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
+  // pn532_packetbuffer[2] = 0x00; // AutoRFCA is off, RF is off
+  // DMSG2("Turning RF off");
+  //
+  // if (! sendCommandCheckAck(pn532_packetbuffer, 3))
+  //   return false;  // no ACK
+  //
+  // // Wait more than 20 ms
+  // delay(20);
+  //
+  // // Power on RF
+  // pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
+  // pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
+  // pn532_packetbuffer[2] = 0x01; // AutoRFCA is off, RF is off
+  // DMSG2("Turning RF on");
+  //
+  // if (! sendCommandCheckAck(pn532_packetbuffer, 3))
+  //   return false;  // no ACK
 
-  if (! sendCommandCheckAck(pn532_packetbuffer, 3))
-    return false;  // no ACK
-
-  // Wait more than 20 ms
-  delay(20);
-
-  // Power on RF
-  pn532_packetbuffer[0] = PN532_COMMAND_RFCONFIGURATION;
-  pn532_packetbuffer[1] = 1;    // Config item 1 (RF field )
-  pn532_packetbuffer[2] = 0x01; // AutoRFCA is off, RF is off
-  DMSG2("Turning RF on"));
-
-  if (! sendCommandCheckAck(pn532_packetbuffer, 3))
-    return false;  // no ACK
-
-  */
 
   return 1;
 }
